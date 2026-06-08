@@ -371,6 +371,9 @@ Planned features and improvements:
 
 ## 📝 Changelog
 
+### v1.0.4
+- **Fix (follow-up to v1.0.3):** Upgraded `notion-client`, `notion-utils`, and `react-notion-x` from 7.7.3 to 7.10.0. The pinned 7.7.3 couldn't parse Notion's new double-nested API response, so `getPage()` returned only the database container block and **none of the rows** — the v1.0.3 normalizer alone wasn't enough. 7.10.0 fetches the rows correctly; combined with `normalizeRecordMap()` the blog now renders again. Also unwraps the record shape defensively in `notion-renderer.tsx`.
+
 ### v1.0.3
 - **Fix:** Blog showed no posts (homepage stuck on loading skeleton, empty RSS feed). Notion's unofficial API changed to double-nest every record (`{ value: { value, role } }` instead of `{ role, value }`), which broke post/page extraction in `src/lib/notion.ts`. Added a `normalizeRecordMap()` step at every `getPage()` call so records are flattened back to the expected shape (backward-compatible with the old shape).
 

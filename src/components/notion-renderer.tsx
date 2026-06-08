@@ -125,7 +125,9 @@ const fixEmbedUrls = (recordMap: ExtendedRecordMap) => {
         const blockWrapper = newRecordMap.block[blockId];
         if (!blockWrapper?.value) return;
 
-        const block = blockWrapper.value;
+        // Notion's API may double-wrap records as { value: { value, role } }.
+        // Unwrap defensively so this works regardless of the API shape.
+        const block: any = (blockWrapper.value as any)?.value ?? blockWrapper.value;
         const blockType = block.type;
 
         // Handle various embed block types including external_object_instance (used by Figma)
