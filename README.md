@@ -369,6 +369,25 @@ Planned features and improvements:
 
 ---
 
+## 📝 Changelog
+
+### v1.0.3
+- **Fix:** Blog showed no posts (homepage stuck on loading skeleton, empty RSS feed). Notion's unofficial API changed to double-nest every record (`{ value: { value, role } }` instead of `{ role, value }`), which broke post/page extraction in `src/lib/notion.ts`. Added a `normalizeRecordMap()` step at every `getPage()` call so records are flattened back to the expected shape (backward-compatible with the old shape).
+
+### v1.0.2
+- Added a Notion template so users don't need to create the database manually.
+- Smoother scrolling post progress indicator.
+
+### v1.0.1
+- Security: moved admin auth and sensitive env vars to server-side.
+- Removed Unsplash and Tiptap dependencies; updated Giscus variables.
+- Various Notion status rendering fixes (CMS and post view).
+
+### v1.0.0
+- Initial release: headless Notion-powered blog with theming and templating.
+
+---
+
 ## �📄 License
 
 MIT License — see [LICENSE](LICENSE) for details.

@@ -5,6 +5,37 @@ import sanitizeHtml from 'sanitize-html';
 // Create Notion client
 const notion = new NotionAPI();
 
+// Notion's unofficial API now double-wraps every record as
+//   { value: { value: <record>, role } }
+// instead of the historical single-nested shape
+//   { role, value: <record> }
+// The rest of this file (and react-notion-x) expects the single-nested shape,
+// so without this normalization every block/collection lookup returns the
+// wrapper object and zero posts/pages get extracted. This flattens the new
+// shape back down while leaving the old shape untouched (forward/backward safe).
+function normalizeRecordMap<T extends Record<string, any> | undefined | null>(recordMap: T): T {
+    if (!recordMap) return recordMap;
+    const tables = ['block', 'collection', 'collection_view', 'notion_user', 'space', 'comment', 'discussion'];
+    for (const table of tables) {
+        const group = (recordMap as any)[table];
+        if (!group) continue;
+        for (const id of Object.keys(group)) {
+            const rec = group[id];
+            // New shape: rec.value === { value: <record>, role }
+            if (rec && rec.value && rec.value.value !== undefined && rec.value.role !== undefined) {
+                rec.value = rec.value.value;
+            }
+        }
+    }
+    return recordMap;
+}
+
+// Wrapper around notion.getPage that always returns a normalized recordMap
+async function getNotionRecordMap(pageId: string) {
+    const recordMap = await notion.getPage(pageId);
+    return normalizeRecordMap(recordMap as any);
+}
+
 // Cache duration in seconds (5 minutes)
 const REVALIDATE_SECONDS = 300;
 
@@ -969,7 +1000,7 @@ export async function fetchNotionData(pageUrl: string) {
         pageId = `${pageId.slice(0, 8)}-${pageId.slice(8, 12)}-${pageId.slice(12, 16)}-${pageId.slice(16, 20)}-${pageId.slice(20)}`;
     }
 
-    const recordMap = await notion.getPage(pageId);
+    const recordMap = await getNotionRecordMap(pageId);
     const hasCollection = recordMap?.collection && Object.keys(recordMap.collection).length > 0;
 
     if (!hasCollection) {
@@ -1006,7 +1037,7 @@ export async function fetchNotionData(pageUrl: string) {
         rows.map(async (row) => {
             try {
                 console.log('[Notion] Fetching page content for:', row.id, '| Title:', row.properties?.title);
-                const pageRecordMap = await notion.getPage(row.id);
+                const pageRecordMap = await getNotionRecordMap(row.id);
 
                 if (!pageRecordMap?.block) {
                     console.log('[Notion] No block data for page:', row.id);
@@ -1157,7 +1188,6 @@ export async function getNotionPosts() {
 
 // Helper for Server Components to get a specific page recordMap
 export async function getNotionPage(pageId: string) {
-    const notion = new NotionAPI();
     const recordMap = await notion.getPage(pageId);
-    return recordMap;
+    return normalizeRecordMap(recordMap as any);
 }
